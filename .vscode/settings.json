@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "https://raw.githubusercontent.com/deployphp/deployer/master/src/schema.json": "file:///home/tegao/Documents/studies/kubernetes/Descomplicando_Kubernetes/day-7/statefulset-nginx.yml"
+    }
+}
