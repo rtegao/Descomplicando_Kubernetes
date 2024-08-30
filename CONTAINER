@@ -1,0 +1,220 @@
+CONTAINER
+	- DEFINITION
+		- RESOURCES SEGREGATION/ISOLATION
+			- CPU, MEMORY, I/O (what does that cgroup, that allow the kernel to perform the necessary isolation and limitations for these resources)
+			- Kernel NAMESPACE (there are eight namespaces -> users, FHS, mount, network)
+			- PROCESS/PROGRAMS (PIDs)
+			- other container can't see what is inside another container
+
+
+	- WHAT IS THE DIFFERENT BETWEEN A CONTAINER AND A VM?
+		- It's important to understand that a container is running on a host, just like a VM, but each VM has it on OS kernel that need to be emulate over the host OS (the host and the VM can have different OS), this emulation may cause an overhead in terms of resource counsumption. This wouldn't happen with a container, that just isolate the application, and uses the host kernel ro comsumes the necessary resources and perform the necessary isolations with ther kernel namespaces.
+
+
+	- WHAT IS A CONTAINER ENGINE?
+		- Is the responsible to create the container, mount point, health, network. It dosen't talk with the kernel (its the container runtaine that does that).
+
+	- WHAT IS A CONTAINER RUNTIME?
+		- Is the one that is responsible to execute the containers, by talking directly with the host kernel. This allows the container runtainer to provide the necessary isolation (cgroups+namespaces).
+
+		there a different levels of container runtime.
+			- low lever (runc, crun)
+				- directly talks with the kernel
+			- high level (containerd)
+				- talks with the container engine
+			- sandbox (gvisor)
+
+KUBERNETES - K8s
+	- Container orchestration tool that allow us to have scalabillity, security and high availability
+
+	ARCHITECTURE
+		- CONTROL PLANE
+			- Is the nodes that controls the clusters.
+			- guarantiees availability, capacity, statefull.
+			- is it possible to run apps in the control plane nodes, but the standard way just have the containers/pods tha manages the k8s cluster.
+		- DATA PLANE
+			- are the worker nodes that has the application running.
+
+
+	CONTROL PLANE COMPONENTES
+		- ETCD
+			- Is where the info os the cluster state is storage.
+			- it store the info that comes from the KUBE API SERVER.
+
+			- ir runs on ports 2379-2380 (TCP)
+
+		- KUBE APISERVER
+			- is the brain of the k8s.
+			- is the only component that is allowed to read and write info from the ETCD.
+			- It's the component that centralized the cluster communication responsibility, so as is the one that can get info from all comonents, it's the one that store these info (cluster state) in the ETCD storage.
+
+			- It runs on port 6443 (TCP)
+
+		- KUBE SCHEDULER
+			- it's the one that assign the PODs to nodes, it analyses the nodes availability/resources in order to make the most suitable decision.
+
+			- it runs on port 10251 (TCP)
+
+		- KUBE CONTROLER MANAGER
+			- It's the component that verify the cluster curent state in order to make the necessary changes attempting to move the current state towards the desired state.
+			- in order to verify the cluster current state this componenet talks to the KUBE APISERVER, in order to have access to the ETCD data
+
+			- it run on port 10252 (TCP)
+
+		- KUBELET 
+			- has the same purspose here and in the worker notes/data plane
+
+
+	DATA PLANE/WORKERS COMPONENTS
+
+		- KUBELET	
+			- component responsible to send the pods and containers state to the KUBE APISERVER.
+			- is the kubernet agent that runs inside the worker nodes.
+
+			- it runs on port 10250 (TCP)
+
+		- KUBE PROXY
+			- Network proxy that runs on each node.
+			- Access/communication point for each POD, that allows or not the communication of the POD to externel world.
+
+		- NODE PORT
+			- service that allows to make the port foward between the application and the POD.
+			- from 30000-32767 (TCP)
+
+		WEAVE NET
+			 - PORTS 6783/6784 (TCP/UDP)
+
+	POD
+		- smaller manage unit.
+		- it can has one or multiple containers, but all of them will share the same POD isolation (this is obviously, because the POD is the "host" for all of theses containers).
+
+		- containers that leaves in the same pod they share the same namespace
+
+	REPLICASET
+		- is the component that replicate the POD unit to a desired number
+		- if you want to have three PODs replicated, this is the component that should be used.
+		- this is created automatically, you just define the replication factor in the deployment.
+
+	DEPLOYMENT
+		- Is where you define the caracteristics of the app deployment, like:
+			- number of replicas (REPLICASET)
+			- app image
+			- compute resources (MEMORY/CPU)
+		- it's how you create the PODs in kubernetes
+
+	SERVICE
+		- load balances that is responsible to allow communication from outside the node.
+		- It's just a loadbalancer that stay is in the front of the PODs inside each node.
+		- that are several kinds of services.
+
+	emptyDir
+		- volume that is removed when a pod is moved/delete, but you can maintain it if the pod id just restarted
+
+	DEPLOYMENT
+		- It's the representation of the desired state of the application in terms of PODs and ReplicaSets. In a deployment it's possible to declare how many many replicas of PODs should be running.
+		- Deplyment allows high availability, because a deployment automatically creates a replicaset, this componenet take care of the number of pods running and if one of them dies it automatically send a signal to create another one, in order to maintain the desired state.
+		- The deployment allow rollout/rollback strategies that avoid downtimes when a new version of the app needs to be lauch.
+
+
+		- to create a deployment create more easy, this allows you to don't have to write the yaml from scratch
+			- kubectl create deployment  --image nginx --replicas 3 nginx-deployment --dry-run=client -o yaml > new-deployment.yaml
+
+		STRATEGIES
+
+			- RollingUpdate
+				- update the pods based on the maxSurge and Unavailable rules
+
+			- Recreate
+				- update all pods at the same time (downtime)
+
+	REPLICASET
+		- It will always be created when you create a deployment.
+		- It's responsible to control the desired number od PODs in the deployment
+
+		- If you don't use a rollout and just a replicaset, it's not possible update a replicaset by performing a rollout, it's necessary to delete the previous replicaset and them create another (downtime)
+
+	DeamonSet
+		- Is almost the same thing as a deployment, but the DeamonSet will guarantee that at least one replica is running on each cluster node.
+		- usecases:
+			- prometheus
+			- datadog
+			- kubeproxy
+			- security tools
+
+	Probes
+		- It's a way to verify if it's everything ok with the pods in differet moments of the POD life sycle.
+
+		- LIVENESS PROBE
+			- verify if the pod it's ok
+			- restar pods until pass the test
+		- STARTUP PROBE
+			- verify if it's everything ok when the pod lauchs
+		- READINESS PROBE
+			- verify if a POD is read to receive traffic
+			- if it fails the POD will be remove from the loadBalancer (Kubernetes service component) and will no longer receives requests. If it return to work the pod will be added again to the loadBalancer
+
+	VOLUMES
+		- It's a way to persiste data even if a POD die.
+
+		- StorageClass
+			- It's a way to automate the creation of Persistent Volumes (PVs).
+			- It's a way to categorize the discs types.
+			- When an app declares the necessity to use a Volume, the same app need to have a PVC (Persistem Volume CLaims) file, this PVC may point to the previous created Storage Class, in order to to aquire a volume space (e.g. 1Gi). The PVC doesn't have idea which kind of disk is been used in the StorageClass, it's just using the resource that is already provisioned. So it's much easier for the user to use the StorageClass, by the levarage of just use the resources that are ready to be consumed.
+
+		- PersistentVolume (PV)
+			- is the actual volume where the data will be storage
+			- there are several possible volumes, such as:
+				- NFS
+				- FileSystem
+				- etc...
+
+		- Persistent Volume Claim
+			- It's the solicitation that is made to use a volume.
+
+	STATEFULSET
+		- It's very similar with a Deployment, but it has the ability to provide ordering and uniqueness to the Pods. These abilities allows the volume creation been bounded to the POD, so for each POD that is created to from a StatefulSet a Volume is created too and this PV is attached to the corresponded POD.
+
+		- HEADLESS SERVICE
+			- in statefull applications when the POD's needs to talk to each other (e.g. database) it's would be necessary to they know the IP adress of each other (POD IP adress), this would be a problem if a POD die, because when a new POD starts the IP may have changed. To avoid this issue a HEADLESS SERVICE can be created, this kind of service will create a fix DNS name for each POD (e.g nginx-0, nginx-1 and nginx-2) and they can talk to each other by the endpoind `<POD_NAME>.<HEADLESS_SERVICE_NAME>.<NAMESPACE>.svc.local.cluster`.
+
+	SERVICES
+		- It's a component that enalbels the POD's been exposed. This is done by the lable, so when a request comes to the cluster, the application label will be the way that the service have to know for which POD the request must be routed
+
+		- TYPES:
+			- ClusterIP
+				- Expose the POD's by using the internal clusterIP, this only enable the POD's to receive internal requests. It's possibel to expose this POD's by using a Ingress or a Gateway
+			- NodePort
+				- Creates a way for the Pods to receive external requests (from outside the cluster) by enabling a specific port on each Node in the cluster. When a request comes to NODE_IP, the kube-proxy on that Node forwards the request to the appropriate Pods backing the Service. This allows external traffic to reach the Pods through the NodePort.
+				- Available PORTS, 30000 to 32767.
+			- LoadBalancer
+				- This is an interesting solution when you have a cloud provider that is managing the cluster (e.g AKS). Have a cloud provider means that is easy to alocate a loadbalancer to the cluster.
+				- It's possible to do it without a cloud provider. 
+			- ExternalName
+				- It doesn't expose the POD's.
+				- expose things to the cluster.
+				- It's a way to enable the PODs to reach another application that is outside the cluster (e.g. database), so when the pod tries to reach the my-externa-service it will be routed to https://www.my-external-app.com (alias).
+
+	SECRET
+
+		- store and mount sensitive info inside etcd and can be acced by the pods.
+		- it's stored in base64, so to protect the secrets is necessary to use RBAX to segregate users.
+		- externalSecretOperator, sync kubernetes secret to external secrets (cloud key-vault)
+		- If you update the Secrets it won't automatically reflect in the POD's
+
+	ConfigMaps
+
+		- It's a place to store configs that will be used inside the POD's
+		- It can be used to store the pre-create secrets and insert them inside the POD's
+		- If you update the ConfigMap it won't automatically reflect in the POD's
+
+
+	INGRESS
+		- It's the most suitable component to manage external eccess.
+		- the ingress is the component that will expose the SERVICE component to the external world.
+		- the ingress has several features that make our life easy when we are managing the traffic
+			- route table to segrate rotes
+			- SSL/TLS easy to config
+			- loadbalacer
+			- fallback
+
+		

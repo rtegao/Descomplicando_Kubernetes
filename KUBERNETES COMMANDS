@@ -1,0 +1,35 @@
+KUBERNETES COMMANDS
+	- kubectl get pods (to specify the namespace it's necessary to add -> --namespace=<namespace_name>) (-A get pods from all namespaces) (`-o yaml` changes the output to a yaml that can be used to create a new pod)
+	- kubectl get nodes
+	- kubectl get namespace
+	- kubectl get services
+	- kubectl apply -f <manifast_file.yaml>
+	- kubectl exec -it <pod_name> -- bash (enter inside a pod, that has just one container, if there are more than one container it's necessary to specify the container name)
+
+	- kubectl describe (pod/deployment details)
+	- kubectl attach <pod_name> -c <contianer_name> -it (this is useful if it's possible to attach to an tty)
+	- kubectl exec -it <pod_name> --bach (for apps like a NGINX that doesn't have a tty running on PID1)
+
+	- ROLLBACK
+		- HISTORY
+			- kubectl rollout history -n <namespace> <deployment/deployment_name> 
+			- kubectl rollout history -n <namespace> <deployment/deployment_name> --revision=<revision_number>
+
+		- UNDU
+			- kubectl rollout undu -n <namespace> <deployment/deployment_name> # rollback to the previous deployment
+			- kubectl rollout undo deployment -n <namespace> <deployment/deployment_name> --to-revision=<revision_number> 
+			kubectl rollout undo deployment -n batata nginx-deployment --to-revision 1
+
+	- SCALE
+	# the previous command, ROLLBACK, does not catch changes in the number of replicas, if you what to change this is necessary to lauch a new version or scale it manually the following command
+
+		- kubectl scale deployment -n <namespace> --replicas <n_replicas> deployment_name
+
+
+
+
+VIM COMMAND
+	- :%s/nginx-deployment/nginx-deployment2/g
+	- copy multiple rows
+		- y<n_rows>y
+		 
