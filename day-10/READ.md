@@ -24,3 +24,19 @@ It's necessary to use the cert-manager with a certificate authority (CA) that pr
 read more on https://cert-manager.io/docs/
 
 Now, go to the `cert` folder and follow the instructions
+
+---
+
+The cert-manager doesn't work in kind cluster because it doesn't have a public IP (or DNS) for the letsencrypt validate.
+
+The authentication (user and pass) in the components folder are:
+- user = ricardo
+- pass = batatabanana123
+
+This auth file was generatate by using the htpasswd with the following command `htpasswd -c auth ricardo` , after that a password will be solicitated and than an `auth` file is created, with this file is necessary to create the secret, use the following command:
+`kubectl create secret generic giropops-senhas-user --from-file=auth --dry-run=client -o yaml > secret.yaml && kubectl applay -f secret.yaml`
+----
+
+Another feature that is possible to perform with kubernetes ingress is the canary deployment. The folder named `canary` has an ingress file that points to a different container image (nginx), this container will receive the route percentage that is determined in the weight annotation field.
+
+It's important to say that the main ingress (from the giropops-senhas application) remains intact, it's not necessary to use the canary annotation.
